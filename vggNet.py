@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import os
+import datetime
 
 def conv(input, weights_name, bias_name, parameters, activation="relu", pool=False):
 
@@ -39,6 +40,9 @@ def dense(input, weights_name,  bias_name, parameters, activation='relu'):
 
 def vgg16_model(sess, parameters):
 
+    root_logdir = "tf_logs"
+    log_dir = os.path.join(root_logdir, str(datetime.datetime.now()))
+
     X = tf.placeholder(dtype=tf.float16, shape=[None, 224, 224, 3], name="input")
 
     conv1_1 = conv(X, "conv1_1_W", bias_name="conv1_1_b", parameters=parameters)
@@ -61,12 +65,16 @@ def vgg16_model(sess, parameters):
     fc8 = dense(fc7, "fc8_W", bias_name="fc8_b", parameters=parameters)
     fc9 = tf.nn.softmax(fc8, name="softmax_output")
 
+    Y_hat = tf.argmax(fc9, axis=0, name="Y_hat")
+
+    Y_hat_summary = tf.summary.tensor_summary(name="Y_hat_summary", tensor=Y_hat)
+    file_write = tf.summary.FileWriter(log_dir, graph=tf.get_default_graph())
 
     init = tf.global_variables_initializer()
     sess.run(init)
 
-    saver = tf.train.Saver()
-    saver.save(sess, os.getcwd())
+    # saver = tf.train.Saver()
+    # saver.save(sess, os.path.join(os.getcwd(), "model"))
 
 
 
@@ -82,8 +90,12 @@ def load_weights():
     return file
 
 def main(argv):
+
+
     parameters = load_weights()
     with tf.Session() as sess:
         vgg16_model(sess, parameters)
+
+
 if __name__ == '__main__':
     tf.app.run()
